@@ -1,0 +1,13 @@
+{
+  "name": "youtubeExtension",
+  "version": "1.0.0",
+  "main": "popup.js",
+  "repository": "https://github.com/JheovannyCampos/youtubeExtension.git",
+  "author": "Jheovanny Campos <jheovanny06@hotmail.com>",
+  "license": "1.0",
+  "private": false,
+  "dependencies": {
+    "font-awesome": "^4.7.0",
+    "jquery": "^3.6.1"
+  }
+}

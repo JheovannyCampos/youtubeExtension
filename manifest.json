@@ -1,0 +1,13 @@
+{
+  "short_name": "chromeextension",
+  "name": "Youtube Extension",
+  "manifest_version": 3,
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "permissions": ["tabs", "storage", "youtube.com/*", "youtube.com.br/*"],
+  "icons": {
+    "16": "assets/logo-16.png"
+  },
+  "version": "1.0"
+}
