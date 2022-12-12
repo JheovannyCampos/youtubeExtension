@@ -5,9 +5,12 @@
   "action": {
     "default_popup": "popup.html"
   },
-  "permissions": ["tabs", "storage", "youtube.com/*", "youtube.com.br/*"],
+  "permissions": ["tabs", "storage", "unlimitedStorage", "background"],
   "icons": {
-    "16": "assets/logo-16.png"
+    "16": "assets/logo-16.png",
+    "48": "assets/logo-16.png",
+    "128": "assets/logo-16.png"
   },
+
   "version": "1.0"
 }

@@ -87,15 +87,16 @@ class YoutubeHelper {
   }
 
   async addFavoriteLink() {
-    const title = this.tab.title;
-    const url = this.tab.url;
+    const { title, url } = this.tab;
 
-    this.favoriteArray.find((item) => {
-      if (item.url === url && item.title === title) {
-        alert("Este link já está nos favoritos");
-        return;
-      }
-    });
+    const alreadyExists = this.favoriteArray.filter((item) => item.url === url);
+
+    console.log("alreadyExists", alreadyExists);
+
+    if (alreadyExists.length) {
+      alert("Este vídeo já está nos favoritos");
+      return;
+    }
 
     this.favoriteArray.push({ title, url });
     chrome.storage.sync.set({ favoriteArray: this.favoriteArray });
@@ -105,8 +106,7 @@ class YoutubeHelper {
     const favoriteItem = document.querySelectorAll("#favoriteLink");
     console.log("favoriteItem", favoriteItem);
 
-    favoriteItem.removeEventListener("click", () => {});
-    favoriteItem.addEventListener("click", () => {
+    favoriteItem.addEventListener("click", (e) => {
       chrome.tabs.create({ url: favoriteItem.href });
     });
   }
@@ -115,13 +115,13 @@ class YoutubeHelper {
     return this.favoriteArray && this.favoriteArray.length
       ? this.favoriteArray.map((item) => {
           return `
-      <div class="row">
-        <div class="col-12" style="border-bottom: 1px solid #000">
-          <h6>
-            <a id="favoriteLink" href="${item.url}">${item.title}</a>
-          </h6>
-        </div>
-      </div>
+        <li>
+          <div class="col-12" style="border-bottom: 1px solid #000">
+            <span>
+              <a id="favoriteLink" href="${item.url}">${item.title}</a>
+            </span>
+          </div>
+        </li>
       `;
         })
       : "<p>Você não possui nenhum favorito</p>";
