@@ -18,19 +18,41 @@
   </head>
   <body class="card">
     <div class="container card-body">
-      <div class="row col-12">
+      <div
+        class="row"
+        style="
+          display: flex;
+          justify-content: space-around;
+          align-items: center;
+        "
+      >
         <h3>Youtube Helper</h3>
+        <img src="assets/logo-32.png" alt="youtube" width="50" height="50" />
       </div>
       <div class="card-header col-12">
         <div class="d-flex row justify-content-around">
-          <button id="buttonTimer" type="button" class="btn btn-danger">
-            Timer
-            <i class="fas fas-stopwatch-20"></i>
+          <button id="buttonTimer" type="button" class="btn btn-danger btn-sm">
+            Timer <img src="assets/timer.png" alt="timer" width="20" height="20"
+            style="margin-left: 5px;"
           </button>
-          <button id="buttonFavorite" type="button" class="btn btn-danger">
+          <button
+            id="buttonFavorite"
+            type="button"
+            class="btn btn-danger btn-sm"
+          >
             Favoritos
+            <img
+              src="assets/favorite.png"
+              alt="favorite"
+              width="20"
+              height="20"
+              style="margin-left: 5px"
+            />
           </button>
-          <button type="button" class="btn btn-danger">Não sei</button>
+          <button id="buttonMarker" type="button" class="btn btn-danger btn-sm">
+            Marcadores
+            <img src="assets/marker.png" alt="marker" width="20" height="20" />
+          </button>
         </div>
       </div>
       <div class="content card-body">
@@ -81,6 +103,7 @@
                 class="btn btn-success"
               >
                 Começar
+                <img src="assets/play.png" alt="timer" width="20" height="20" />
               </button>
             </div>
             <div class="col-6">
@@ -90,6 +113,12 @@
                 class="btn btn-danger"
               >
                 Parar
+                <img
+                  src="assets/pause.png"
+                  alt="timer"
+                  width="20"
+                  height="20"
+                />
               </button>
             </div>
           </div>
@@ -97,7 +126,7 @@
         <div id="favoriteContent" hidden>
           <div class="row col-12">
             <h4>Favoritos</h4>
-            <p>Aqui você pode favoritar o vídeo atual que está assistindo</p>
+            <p>Clique para salvar o vídeo atual como favorito</p>
           </div>
           <div class="col-12 d-flex">
             <div class="col-6">
@@ -125,14 +154,40 @@
             style="list-style-type: none"
           ></ul>
         </div>
+        <div id="markerContent" hidden>
+          <div class="row col-12">
+            <h4>Marcadores</h4>
+            <p>Clique para adicionar um marcador no tempo deste vídeo</p>
+          </div>
+          <div class="col-12 d-flex">
+            <div class="col-6">
+              <button
+                id="save-marker-button"
+                type="button"
+                class="btn btn-warning"
+              >
+                Salvar
+              </button>
+            </div>
+            <div class="col-6">
+              <button
+                id="delete-all-button"
+                type="button"
+                class="btn btn-danger"
+              >
+                Excluir Tudo
+              </button>
+            </div>
+          </div>
+          <ul
+            id="markersWrapper"
+            class="row col-12 mt-2"
+            style="list-style-type: none"
+          ></ul>
+        </div>
       </div>
     </div>
-
-    <script
-      src="https://code.jquery.com/jquery-3.6.1.js"
-      integrity="sha256-3zlB5s2uwoUzrXK3BT7AX3FyvojsraNFxCc2vC/7pNI="
-      crossorigin="anonymous"
-    ></script>
     <script src="./popup.js" type="module"></script>
+    <script src="./background.js" type="module"></script>
   </body>
 </html>

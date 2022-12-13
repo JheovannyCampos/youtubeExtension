@@ -12,27 +12,29 @@ class YoutubeHelper {
 
   async init() {
     this.buttonTimer = document.getElementById("buttonTimer");
-    this.buttonTimer.removeEventListener("click", () => {});
     this.buttonTimer.addEventListener("click", () => {
       this.showFunction("timer");
     });
     this.buttonFavorite = document.getElementById("buttonFavorite");
-    this.buttonFavorite > removeEventListener("click", () => {});
     this.buttonFavorite.addEventListener("click", () => {
       this.showFunction("favorite");
     });
 
+    this.buttonMarker = document.getElementById("buttonMarker");
+    this.buttonMarker.addEventListener("click", () => {
+      this.showFunction("marker");
+    });
+
     await this.getTab();
     await this.timerEvents();
-    await this.favoriteEvent();
+    await this.favoriteEvents();
   }
 
-  async favoriteEvent() {
+  async favoriteEvents() {
     this.favoriteWrapper = document.getElementById("favoriteWrapper");
     this.addFavorite = document.getElementById("save-favorite-button");
     const deleteFavorite = document.getElementById("delete-all-button");
 
-    deleteFavorite.removeEventListener("click", () => {});
     deleteFavorite.addEventListener("click", () => {
       this.favoriteArray = [];
       this.removeAllFavoriteLink();
@@ -41,26 +43,42 @@ class YoutubeHelper {
     this.addFavorite.addEventListener("click", () => {
       this.addFavoriteLink();
     });
-    this.addFavorite.removeEventListener("click", () => {});
   }
 
+  startTimerFunction = (time) => {};
+
   async timerEvents() {
-    this.startTimer = document.getElementById("start-timer-button");
-    this.startTimer.addEventListener("click", () => {
-      this.interval.clearInterval();
+    const startTimer = document.getElementById("start-timer-button");
+    const stopTimer = document.getElementById("stop-timer-button");
+
+    stopTimer.addEventListener("click", () => {
+      chrome.scripting.executeScript({
+        target: { tabId: this.tab.id },
+        function: () => {
+          alert("Contador parado");
+          clearTimeout();
+        },
+      });
+    });
+
+    startTimer.addEventListener("click", () => {
       const hours = document.getElementById("hours").value;
       const minutes = document.getElementById("minutes").value;
-
       const time = hours * 60 * 60 + minutes * 60;
 
-      if (!time) {
-        alert("Você precisa informar um tempo");
-        return;
-      }
-
-      this.interval = setInterval(() => {
-        alert(`Você está assistindo a um vídeo há ${time}`);
-      }, time * 1000);
+      chrome.scripting.executeScript({
+        target: { tabId: this.tab.id },
+        function: () => {
+          if (!time) {
+            alert("Por favor, insira um tempo válido");
+            return;
+          }
+          alert("Contador iniciado");
+          setTimeout(() => {
+            alert("Contador finalizado");
+          }, time * 1000);
+        },
+      });
     });
 
     this.stopTimer = document.getElementById("stop-timer-button");
@@ -75,40 +93,66 @@ class YoutubeHelper {
   }
 
   async removeAllFavoriteLink() {
+    if (!this.favoriteArray.length) {
+      alert("Não há favoritos para remover");
+      return;
+    }
     const resp = window.confirm(
       "Você tem certeza que deseja remover todos os favoritos?"
     );
     if (resp) {
       this.favoriteArray = [];
       await chrome.storage.sync.set({ favoriteArray: this.favoriteArray });
-      console.log("this.favoriteArray", this.favoriteArray);
-      this.favoriteWrapper.innerHTML = await this.createFavoriteHtml();
     }
+    this.favoriteWrapper.innerHTML = await this.createFavoriteHtml();
+  }
+
+  openFavoriteLink() {
+    const favoriteLink = document.querySelectorAll("a.favoriteLink");
+    favoriteLink.forEach((item) => {
+      item.addEventListener("click", () => {
+        chrome.tabs.create({ url: item.href });
+      });
+    });
+  }
+
+  deleteFavoriteLink() {
+    const deleteFavorite = document.querySelectorAll("img.deleteFavorite");
+    deleteFavorite.forEach((item) => {
+      item.addEventListener("click", () => {
+        const id = item.parentNode.querySelector("a").id;
+        const resp = window.confirm(
+          "Você tem certeza que deseja remover este favorito?"
+        );
+        if (resp) {
+          this.favoriteArray = this.favoriteArray.filter(
+            (item) => item.id !== id
+          );
+          chrome.storage.sync.set({ favoriteArray: this.favoriteArray });
+          this.favoriteWrapper.innerHTML = this.createFavoriteHtml();
+          this.openFavoriteLink();
+          this.deleteFavoriteLink();
+        }
+      });
+    });
   }
 
   async addFavoriteLink() {
     const { title, url } = this.tab;
-
-    const alreadyExists = this.favoriteArray.filter((item) => item.url === url);
-
-    console.log("alreadyExists", alreadyExists);
+    const [, id] = url.split("=");
+    const alreadyExists = this.favoriteArray.filter((item) => item.id === id);
 
     if (alreadyExists.length) {
       alert("Este vídeo já está nos favoritos");
       return;
     }
 
-    this.favoriteArray.push({ title, url });
+    this.favoriteArray.push({ id, title, url });
     chrome.storage.sync.set({ favoriteArray: this.favoriteArray });
 
     this.favoriteWrapper.innerHTML = await this.createFavoriteHtml();
-
-    const favoriteItem = document.querySelectorAll("#favoriteLink");
-    console.log("favoriteItem", favoriteItem);
-
-    favoriteItem.addEventListener("click", (e) => {
-      chrome.tabs.create({ url: favoriteItem.href });
-    });
+    this.openFavoriteLink();
+    this.deleteFavoriteLink();
   }
 
   createFavoriteHtml() {
@@ -116,10 +160,19 @@ class YoutubeHelper {
       ? this.favoriteArray.map((item) => {
           return `
         <li>
-          <div class="col-12" style="border-bottom: 1px solid #000">
-            <span>
-              <a id="favoriteLink" href="${item.url}">${item.title}</a>
-            </span>
+          <div 
+            class="col-12 d-flex align-items-center justify-content-around" 
+            style="border-bottom: 1px solid #000"
+          >
+              <h6>
+                <a id="${item.id}" class="favoriteLink" href="${item.url}">${item.title}</a>
+              </h6>
+              <img 
+                src="assets/trash.png" 
+                class="deleteFavorite" 
+                style="width: 20px; height: 20px; cursor: pointer" 
+                title="Remover favorito"
+              />
           </div>
         </li>
       `;
@@ -131,14 +184,36 @@ class YoutubeHelper {
     switch (functionName) {
       case "timer":
         this.timerHtml = document.getElementById("timerContent");
-        if (this.favoriteHtml) this.favoriteHtml.hidden = true;
+
+        if (this.favoriteHtml && !this.favoriteHtml.hidden) {
+          this.favoriteHtml.hidden = true;
+        } else if (this.markerHtml && !this.markerHtml.hidden) {
+          this.markerHtml.hidden = true;
+        }
         this.timerHtml.hidden = false;
         break;
       case "favorite":
         this.favoriteHtml = document.getElementById("favoriteContent");
-        if (this.timerHtml) this.timerHtml.hidden = true;
+        if (this.timerHtml && !this.timerHtml.hidden) {
+          this.timerHtml.hidden = true;
+        } else if (this.markerHtml && !this.markerHtml.hidden) {
+          this.markerHtml.hidden = true;
+        }
         this.favoriteHtml.hidden = false;
         this.favoriteWrapper.innerHTML = this.createFavoriteHtml();
+        this.openFavoriteLink();
+        this.deleteFavoriteLink();
+        break;
+      case "marker":
+        this.markerHtml = document.getElementById("markerContent");
+        if (this.timerHtml && !this.timerHtml.hidden) {
+          this.timerHtml.hidden = true;
+        } else if (this.favoriteHtml && !this.favoriteHtml.hidden) {
+          this.favoriteHtml.hidden = true;
+        }
+        this.markerHtml.hidden = false;
+        break;
+
       default:
         break;
     }
