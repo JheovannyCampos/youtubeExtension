@@ -7,6 +7,9 @@ class YoutubeHelper {
     this.favoriteHtml = undefined;
     this.favoriteWrapper = undefined;
     this.favoriteArray = [];
+    this.markersWrapper = undefined;
+    this.videoTimeMarker = undefined;
+    this.videoMarkerArray = [];
     this.init();
   }
 
@@ -28,6 +31,104 @@ class YoutubeHelper {
     await this.getTab();
     await this.timerEvents();
     await this.favoriteEvents();
+    await this.markerEvents();
+  }
+
+  async getTab() {
+    [this.tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    await chrome.storage.sync.get("favoriteArray", (result) => {
+      this.favoriteArray.push(...result.favoriteArray);
+    });
+    await chrome.storage.sync.get("videoMarkerArray", (result) => {
+      this.videoMarkerArray.push(...result.videoMarkerArray);
+    });
+    console.log("this.videoMarkerArray", this.videoMarkerArray);
+  }
+
+  async timerEvents() {
+    const startTimer = document.getElementById("start-timer-button");
+    const stopTimer = document.getElementById("stop-timer-button");
+
+    stopTimer.addEventListener("click", () => {
+      chrome.scripting.executeScript({
+        target: { tabId: this.tab.id },
+        function: () => {
+          alert("Contador finalizado");
+        },
+      });
+    });
+
+    startTimer.addEventListener("click", () => {
+      const hours = document.getElementById("hours").value;
+      const minutes = document.getElementById("minutes").value;
+      const time = hours * 60 * 60 + minutes * 60;
+      alert("Contador iniciado");
+      chrome.scripting.executeScript({
+        target: { tabId: this.tab.id },
+        function: () => {
+          if (!time) {
+            alert("Por favor, insira um tempo válido");
+            return;
+          }
+
+          setTimeout(() => {
+            alert("Contador finalizado");
+          }, time * 1000);
+        },
+      });
+    });
+  }
+
+  startTimerFunction = (time) => {};
+
+  async markerEvents() {
+    const addMarker = document.getElementById("save-marker-button");
+    this.markerWrapper = document.getElementById("markerWrapper");
+    addMarker.addEventListener("click", () => {
+      this.addMarkerLink();
+    });
+  }
+
+  async addMarkerLink() {
+    [this.videoTimeMarker] = await chrome.scripting.executeScript({
+      target: { tabId: this.tab.id },
+      function: () => document.querySelector("video").currentTime,
+    });
+    console.log("this.videoTimeMarker", this.videoTimeMarker);
+    const idVideo = this.videoTimeMarker.documentId;
+    const [timeVideo] = this.videoTimeMarker.result.toString().split(".");
+
+    this.videoMarkerArray.push({ idVideo, timeVideo });
+    await chrome.storage.sync.set({ videoMarkerArray: this.videoMarkerArray });
+    this.markerWrapper.innerHTML = this.createMarkerHtml();
+    this.openMarkerLink();
+  }
+
+  openMarkerLink() {
+    const markerLink = document.querySelectorAll("a.markerLink");
+    markerLink.forEach((item) => {
+      item.addEventListener("click", () => {
+        chrome.tabs.create({ url: item.href });
+      });
+    });
+  }
+
+  createMarkerHtml() {
+    return this.videoMarkerArray.map(
+      (item) =>
+        `
+        <div class="markerLinkWrapper col-12">
+          <a 
+            href="${this.tab.url + `&t=${item.timeVideo}`}" 
+            id="${item.id}" 
+            class="markerLink"
+          >
+            ${item.timeVideo}
+          </a>
+          <img src="assets/delete.png" class="deletemarker" />
+        </div>
+      `
+    );
   }
 
   async favoriteEvents() {
@@ -42,53 +143,6 @@ class YoutubeHelper {
 
     this.addFavorite.addEventListener("click", () => {
       this.addFavoriteLink();
-    });
-  }
-
-  startTimerFunction = (time) => {};
-
-  async timerEvents() {
-    const startTimer = document.getElementById("start-timer-button");
-    const stopTimer = document.getElementById("stop-timer-button");
-
-    stopTimer.addEventListener("click", () => {
-      chrome.scripting.executeScript({
-        target: { tabId: this.tab.id },
-        function: () => {
-          alert("Contador parado");
-          clearTimeout();
-        },
-      });
-    });
-
-    startTimer.addEventListener("click", () => {
-      const hours = document.getElementById("hours").value;
-      const minutes = document.getElementById("minutes").value;
-      const time = hours * 60 * 60 + minutes * 60;
-
-      chrome.scripting.executeScript({
-        target: { tabId: this.tab.id },
-        function: () => {
-          if (!time) {
-            alert("Por favor, insira um tempo válido");
-            return;
-          }
-          alert("Contador iniciado");
-          setTimeout(() => {
-            alert("Contador finalizado");
-          }, time * 1000);
-        },
-      });
-    });
-
-    this.stopTimer = document.getElementById("stop-timer-button");
-    this.stopTimer.addEventListener("click", () => {});
-  }
-
-  async getTab() {
-    [this.tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    await chrome.storage.sync.get("favoriteArray", (result) => {
-      this.favoriteArray.push(...result.favoriteArray);
     });
   }
 
@@ -212,6 +266,9 @@ class YoutubeHelper {
           this.favoriteHtml.hidden = true;
         }
         this.markerHtml.hidden = false;
+
+        this.markerWrapper.innerHTML = this.createMarkerHtml();
+        this.openMarkerLink();
         break;
 
       default:
