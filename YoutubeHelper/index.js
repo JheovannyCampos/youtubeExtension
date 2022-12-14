@@ -42,39 +42,32 @@ class YoutubeHelper {
     await chrome.storage.sync.get("videoMarkerArray", (result) => {
       this.videoMarkerArray.push(...result.videoMarkerArray);
     });
-    console.log("this.videoMarkerArray", this.videoMarkerArray);
   }
 
   async timerEvents() {
     const startTimer = document.getElementById("start-timer-button");
-    const stopTimer = document.getElementById("stop-timer-button");
-
-    stopTimer.addEventListener("click", () => {
-      chrome.scripting.executeScript({
-        target: { tabId: this.tab.id },
-        function: () => {
-          alert("Contador finalizado");
-        },
-      });
-    });
 
     startTimer.addEventListener("click", () => {
       const hours = document.getElementById("hours").value;
       const minutes = document.getElementById("minutes").value;
       const time = hours * 60 * 60 + minutes * 60;
+
+      if (!time) {
+        alert("Por favor, insira um tempo válido");
+        return;
+      }
+
       alert("Contador iniciado");
+
       chrome.scripting.executeScript({
         target: { tabId: this.tab.id },
-        function: () => {
-          if (!time) {
-            alert("Por favor, insira um tempo válido");
-            return;
-          }
-
+        function: (time) => {
           setTimeout(() => {
-            alert("Contador finalizado");
+            alert("O seu tempo acabou!");
+            window.clearTimeout();
           }, time * 1000);
         },
+        args: [time],
       });
     });
   }
@@ -145,14 +138,7 @@ class YoutubeHelper {
         const resp = window.confirm(
           "Você tem certeza que deseja remover este marcador?"
         );
-        console.log(
-          "id    ",
-          id,
-          "item.id",
-          this.videoMarkerArray.idVideo,
-          "some",
-          this.videoMarkerArray.idVideo + this.videoMarkerArray.timeVideo
-        );
+
         if (resp) {
           this.videoMarkerArray = this.videoMarkerArray.filter(
             (item) => item.idVideo + item.timeVideo !== id
