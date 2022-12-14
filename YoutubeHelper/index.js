@@ -83,6 +83,12 @@ class YoutubeHelper {
 
   async markerEvents() {
     const addMarker = document.getElementById("save-marker-button");
+    const deleteAllMarker = document.getElementById("delete-all-marker-button");
+
+    deleteAllMarker.addEventListener("click", () => {
+      this.deleteAllMarkerLink();
+    });
+
     this.markerWrapper = document.getElementById("markerWrapper");
     addMarker.addEventListener("click", () => {
       this.addMarkerLink();
@@ -90,18 +96,74 @@ class YoutubeHelper {
   }
 
   async addMarkerLink() {
+    const labelMarker = prompt("Insira um nome para o marcador");
+
     [this.videoTimeMarker] = await chrome.scripting.executeScript({
       target: { tabId: this.tab.id },
       function: () => document.querySelector("video").currentTime,
     });
-    console.log("this.videoTimeMarker", this.videoTimeMarker);
-    const idVideo = this.videoTimeMarker.documentId;
-    const [timeVideo] = this.videoTimeMarker.result.toString().split(".");
 
-    this.videoMarkerArray.push({ idVideo, timeVideo });
+    const idVideo = this.videoTimeMarker.documentId.toString();
+    const timeVideo = this.videoTimeMarker.result.toString();
+
+    this.videoMarkerArray.push({
+      idVideo,
+      timeVideo,
+      label: labelMarker,
+      title: this.tab.title,
+      url: this.tab.url,
+    });
     await chrome.storage.sync.set({ videoMarkerArray: this.videoMarkerArray });
+
     this.markerWrapper.innerHTML = this.createMarkerHtml();
     this.openMarkerLink();
+    this.deleteMarkerLink();
+  }
+
+  async deleteAllMarkerLink() {
+    if (!this.videoMarkerArray.length) {
+      alert("Não há marcadores para remover");
+      return;
+    }
+    const resp = window.confirm(
+      "Você tem certeza que deseja remover todos os marcadores?"
+    );
+    if (resp) {
+      this.videoMarkerArray = [];
+      await chrome.storage.sync.set({
+        videoMarkerArray: this.videoMarkerArray,
+      });
+      this.markerWrapper.innerHTML = this.createMarkerHtml();
+    }
+  }
+
+  deleteMarkerLink() {
+    const deleteMarker = document.querySelectorAll("img.deletemarker");
+    deleteMarker.forEach((item) => {
+      item.addEventListener("click", () => {
+        const id = item.parentNode.querySelector(`a`).id;
+        const resp = window.confirm(
+          "Você tem certeza que deseja remover este marcador?"
+        );
+        console.log(
+          "id    ",
+          id,
+          "item.id",
+          this.videoMarkerArray.idVideo,
+          "some",
+          this.videoMarkerArray.idVideo + this.videoMarkerArray.timeVideo
+        );
+        if (resp) {
+          this.videoMarkerArray = this.videoMarkerArray.filter(
+            (item) => item.idVideo + item.timeVideo !== id
+          );
+          chrome.storage.sync.set({ videoMarkerArray: this.videoMarkerArray });
+          this.markerWrapper.innerHTML = this.createMarkerHtml();
+          this.openMarkerLink();
+          this.deleteMarkerLink();
+        }
+      });
+    });
   }
 
   openMarkerLink() {
@@ -114,21 +176,45 @@ class YoutubeHelper {
   }
 
   createMarkerHtml() {
-    return this.videoMarkerArray.map(
-      (item) =>
-        `
-        <div class="markerLinkWrapper col-12">
+    return this.videoMarkerArray.length
+      ? this.videoMarkerArray.map((item) => {
+          const [idFormated] = item.timeVideo.toString().split(".");
+          return `
+        <div 
+          class="markerLinkWrapper col-12 d-flex align-items-center justify-content-between" 
+          style="
+            text-overflow: ellipsis;
+            flex-direction: column;
+            "
+        >
+            <p class="markerTitle" style="width: 260px;
+            font-size: 15px;
+            vertical-align: inherit;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;"
+            >
+              ${item.title}
+            </p>
+          <div id="${
+            item.timeVideo
+          }" class="sameVideo row" style="width: 285px; align-items: center; justify-content: space-between;">
           <a 
-            href="${this.tab.url + `&t=${item.timeVideo}`}" 
-            id="${item.id}" 
+            href="${item.url + `&t=${idFormated}`}" 
+            id="${item.idVideo + item.timeVideo}" 
             class="markerLink"
           >
-            ${item.timeVideo}
+            ${this.formatVideoTime(item.timeVideo)}
           </a>
-          <img src="assets/delete.png" class="deletemarker" />
+          <input type="text" value="${
+            item.label ? item.label : "Sem nome"
+          }" class="markerLabel" style="width" disabled/>
+          <img src="assets/trash.png" style="width: 20px; height: 20px; cursor: pointer" class="deletemarker" />
+          </div>
         </div>
-      `
-    );
+      `;
+        })
+      : `<p class="noMarker">Não há marcadores</p>`;
   }
 
   async favoriteEvents() {
@@ -234,6 +320,17 @@ class YoutubeHelper {
       : "<p>Você não possui nenhum favorito</p>";
   }
 
+  formatVideoTime = (time) => {
+    const timeFormated = Number(time);
+    let h = Math.floor(timeFormated / 3600);
+    let m = Math.floor((timeFormated % 3600) / 60);
+    let s = Math.floor((timeFormated % 3600) % 60);
+    let hDisplay = h > 0 ? h + ":" : "";
+    let mDisplay = m > 0 ? m : "00";
+    let sDisplay = s > 0 ? ":" + s : "";
+    return hDisplay + mDisplay + sDisplay;
+  };
+
   async showFunction(functionName) {
     switch (functionName) {
       case "timer":
@@ -269,6 +366,7 @@ class YoutubeHelper {
 
         this.markerWrapper.innerHTML = this.createMarkerHtml();
         this.openMarkerLink();
+        this.deleteMarkerLink();
         break;
 
       default:

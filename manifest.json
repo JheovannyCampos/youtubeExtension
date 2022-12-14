@@ -1,6 +1,6 @@
 {
-  "short_name": "chromeextension",
-  "name": "Youtube Extension",
+  "short_name": "YTBHP",
+  "name": "Youtube Helper",
   "manifest_version": 3,
   "action": {
     "default_popup": "popup.html"
