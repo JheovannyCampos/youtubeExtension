@@ -1,6 +1,7 @@
 {
   "short_name": "YTBHP",
   "name": "Youtube Helper",
+  "author": "Jheovanny Campos de Souza",
   "manifest_version": 3,
   "action": {
     "default_popup": "popup.html"
@@ -20,13 +21,10 @@
     "unlimitedStorage",
     "background"
   ],
-  "background": {
-    "service_worker": "YoutubeHelper/index.js"
-  },
   "icons": {
     "16": "assets/logo-16.png",
-    "48": "assets/logo-16.png",
-    "128": "assets/logo-16.png"
+    "48": "assets/logo-48.png",
+    "128": "assets/logo-128.png"
   },
 
   "version": "1.0"
